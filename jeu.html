@@ -229,10 +229,9 @@
   const ZOOM_SEUIL_HAUT = 9;
   const PENALITE_ZOOM_MAX = 0.5; // au zoom minimal, le joueur ne garde que 50% de son score
 
-  // --- SAUVEGARDE GOOGLE SHEET (optionnelle) ---
-  // Colle ici l'URL de ton Web App Google Apps Script (voir instructions fournies).
-  // Laisse la chaîne vide pour désactiver l'envoi.
-  const URL_GOOGLE_SHEET = "";
+  // --- SAUVEGARDE GOOGLE SHEET ---
+  // La configuration (URL_GOOGLE_SHEET) est centralisée dans profil.js,
+  // car scores.html en a aussi besoin pour la synchronisation.
 
   let marqueurReel = null, marqueurJoueur = null, ligne = null;
   let clicJoueurTemp = null;
@@ -339,7 +338,7 @@
 
   function sauvegarderPartieFinale() {
     let scores = getScores();
-    const partie = { nom: pseudoJoueur, score: Math.round(scoreTotal), date: new Date().toISOString(), stats: detailsPartie };
+    const partie = { id: genererIdPartie(), nom: pseudoJoueur, score: Math.round(scoreTotal), date: new Date().toISOString(), stats: detailsPartie };
     scores.push(partie);
     scores.sort((a, b) => b.score - a.score);
     localStorage.setItem('geoScores', JSON.stringify(scores));
@@ -521,6 +520,10 @@
   }
 
   window.addEventListener('resize', () => map.invalidateSize());
+
+  window.addEventListener('geo-sync-complete', () => {
+    if (partieEnCours && lieux[indexActuel]) afficherClassementLive(lieux[indexActuel]);
+  });
 </script>
 </body>
 </html>

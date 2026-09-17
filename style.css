@@ -154,6 +154,23 @@ a { color: inherit; }
   font-family: var(--font-display);
 }
 
+.sync-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.1);
+  color: #cfdcf4;
+  cursor: pointer;
+  font-size: 0.95em;
+  transition: background 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+.sync-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+.sync-btn.syncing { color: var(--bleu-vif); pointer-events: none; }
+.sync-btn.syncing i { animation: sync-spin 0.9s linear infinite; }
+@keyframes sync-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
 /* ---------- Nav responsive : évite tout débordement horizontal sur mobile ---------- */
 @media (max-width: 640px) {
   .top-nav { padding: 10px 14px; gap: 6px; }

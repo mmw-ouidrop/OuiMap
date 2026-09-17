@@ -346,9 +346,14 @@
   // --- Onglet PROFIL JOUEUR ---
   function remplirSelectJoueurs() {
     const select = document.getElementById('select-joueur');
+    const valeurActuelle = select.value;
+    select.innerHTML = '<option value="">-- Choisissez un joueur --</option>';
     getProfils().forEach(p => {
       select.innerHTML += `<option value="${p.nom}">${p.nom}</option>`;
     });
+    if (valeurActuelle && Array.from(select.options).some(o => o.value === valeurActuelle)) {
+      select.value = valeurActuelle;
+    }
   }
 
   function afficherProfilJoueur() {
@@ -453,6 +458,15 @@
       location.reload();
     }
   }
+
+  // --- Rafraîchissement à chaud après une synchronisation (auto ou manuelle) ---
+  window.addEventListener('geo-sync-complete', () => {
+    afficherKPI();
+    remplirSelectJoueurs();
+    afficherClassementGlobal();
+    if (document.getElementById('select-lieu').value) afficherTableauLieu();
+    if (document.getElementById('select-joueur').value) afficherProfilJoueur();
+  });
 </script>
 </body>
 </html>
