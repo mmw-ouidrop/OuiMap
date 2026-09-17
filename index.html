@@ -21,6 +21,7 @@
     background-image: radial-gradient(rgba(59,130,246,0.22) 1px, transparent 1px);
     background-size: 22px 22px;
     opacity: 0.5;
+    pointer-events: none; /* évite que ce calque décoratif ne bloque les clics sur les boutons du hero */
   }
   .hero-inner { position: relative; max-width: 900px; margin: 0 auto; text-align: center; }
   .hero-eyebrow {
@@ -92,7 +93,7 @@
 <section class="hero">
   <div class="hero-inner">
     <div class="hero-eyebrow"><i class="fa-solid fa-compass"></i> Le GeoGuessr fait maison</div>
-    <h1>Connais-tu vraiment la France ?</h1>
+    <h1>Connais-tu vraiment tes Droppers ?</h1>
     <p class="lead">16 lieux à retrouver sur la carte, un chrono qui tourne, et un classement en direct pour chaque point. Place ton pin le plus près possible, le plus vite possible.</p>
     <div class="hero-actions">
       <a href="jeu.html" class="btn btn-brass"><i class="fa-solid fa-play"></i> Démarrer une partie</a>

@@ -98,10 +98,13 @@
   #resultat .result-item .val { font-weight: 700; font-size: 1.15em; }
   #resultat .result-item .lab { font-size: 0.78em; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.03em; }
   #resultat .result-item.points .val { color: var(--forest); }
+  #resultat .result-item.penalty .val,
+  #resultat .result-item.penalty .lab { color: var(--coral); }
 
   .action-btn { font-size: 1.05em; margin: 4px 0; display: none; }
   #btn-valider { min-width: 220px; }
   #btn-suivant { min-width: 220px; }
+  #btn-partager { min-width: 220px; }
   #btn-rejouer { min-width: 220px; }
 
   .leaderboard-title { margin: 0 0 12px; font-size: 1.1em; display: flex; align-items: center; gap: 8px; }
@@ -188,6 +191,7 @@
     <div id="resultat"></div>
     <button id="btn-valider" class="btn btn-brass action-btn" onclick="validerChoix()"><i class="fa-solid fa-check"></i> Valider mon choix</button>
     <button id="btn-suivant" class="btn btn-primary action-btn" onclick="prochaineManche()"><i class="fa-solid fa-arrow-right"></i> Manche suivante</button>
+    <button id="btn-partager" class="btn btn-outline action-btn" onclick="partagerScore()"><i class="fa-solid fa-share-nodes"></i> Partager mon score</button>
     <button id="btn-rejouer" class="btn btn-forest action-btn" onclick="location.reload()"><i class="fa-solid fa-rotate-right"></i> Rejouer une partie</button>
   </div>
 
@@ -215,8 +219,23 @@
 
   const BONUS_TEMPS_MAX = 0.2;
 
+  // --- ANTI-TRICHE DÉZOOM ---
+  // En dessous de ZOOM_SEUIL_BAS (vue de départ), le joueur subit la pénalité maximale.
+  // À partir de ZOOM_SEUIL_HAUT, le score n'est plus pénalisé du tout.
+  // La pénalité est calculée sur le niveau de zoom au moment exact du clic (pas de triche possible
+  // en zoomant après coup : c'est l'état de la carte au moment où le pin est posé qui compte).
+  const ZOOM_SEUIL_BAS = 5;
+  const ZOOM_SEUIL_HAUT = 9;
+  const PENALITE_ZOOM_MAX = 0.5; // au zoom minimal, le joueur ne garde que 50% de son score
+
+  // --- SAUVEGARDE GOOGLE SHEET (optionnelle) ---
+  // Colle ici l'URL de ton Web App Google Apps Script (voir instructions fournies).
+  // Laisse la chaîne vide pour désactiver l'envoi.
+  const URL_GOOGLE_SHEET = "https://script.google.com/macros/s/AKfycbzh9d3pIdO8gy-s-Zk7HsiQQAhi4KkFPQ0sOMtFt4kbOf84ve9c4c-aSM__0stbsS200g/exec";
+
   let marqueurReel = null, marqueurJoueur = null, ligne = null;
   let clicJoueurTemp = null;
+  let zoomAuClic = null;
   let timerInterval, startTime, tempsEcoule = 0;
   let partieEnCours = false;
 
@@ -319,10 +338,12 @@
 
   function sauvegarderPartieFinale() {
     let scores = getScores();
-    scores.push({ nom: pseudoJoueur, score: Math.round(scoreTotal), date: new Date().toISOString(), stats: detailsPartie });
+    const partie = { nom: pseudoJoueur, score: Math.round(scoreTotal), date: new Date().toISOString(), stats: detailsPartie };
+    scores.push(partie);
     scores.sort((a, b) => b.score - a.score);
     localStorage.setItem('geoScores', JSON.stringify(scores));
     setLastPseudo(pseudoJoueur);
+    envoyerVersGoogleSheet(partie);
 
     document.getElementById('titre-leaderboard').innerHTML = `<i class="fa-solid fa-trophy"></i> Top général (fin de partie)`;
     const ul = document.getElementById('leaderboard');
@@ -396,7 +417,35 @@
           <div class="final-score">${Math.round(scoreTotal)} points</div>
         </div>`;
       sauvegarderPartieFinale();
+      document.getElementById('btn-partager').style.display = "flex";
       document.getElementById('btn-rejouer').style.display = "flex";
+    }
+  }
+
+  // --- Sauvegarde de secours sur Google Sheet (best-effort, silencieuse) ---
+  function envoyerVersGoogleSheet(partie) {
+    if (!URL_GOOGLE_SHEET) return;
+    fetch(URL_GOOGLE_SHEET, {
+      method: 'POST',
+      mode: 'no-cors', // les Web Apps Apps Script ne renvoient pas d'en-têtes CORS lisibles ; on n'a pas besoin de lire la réponse
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // évite le preflight CORS bloqué par Apps Script
+      body: JSON.stringify(partie)
+    }).catch(err => console.warn('Sauvegarde Google Sheet impossible (hors-ligne ?) :', err));
+  }
+
+  // --- Partage du score final ---
+  function partagerScore() {
+    const texte = `J'ai fait ${Math.round(scoreTotal)} points sur OuiMap Dropper 🗺️ ! À toi de faire mieux :`;
+    const url = window.location.origin + window.location.pathname.replace('jeu.html', 'index.html');
+
+    if (navigator.share) {
+      navigator.share({ title: 'OuiMap Dropper', text: texte, url }).catch(() => {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(`${texte} ${url}`)
+        .then(() => alert('Score copié dans le presse-papiers, prêt à partager !'))
+        .catch(() => prompt('Copie ce texte pour le partager :', `${texte} ${url}`));
+    } else {
+      prompt('Copie ce texte pour le partager :', `${texte} ${url}`);
     }
   }
 
@@ -407,6 +456,7 @@
     if (document.getElementById('start-popup').style.display !== "none") return;
 
     clicJoueurTemp = e.latlng;
+    zoomAuClic = map.getZoom();
 
     if (marqueurJoueur) {
       marqueurJoueur.setLatLng(clicJoueurTemp);
@@ -433,12 +483,18 @@
     let scoreBase = 5000 * Math.pow(ratio, 3);
 
     let coeffTemps = tempsEcoule < 15 ? 1 + (BONUS_TEMPS_MAX * (1 - (tempsEcoule / 15))) : 1;
-    let pointsManche = Math.round(scoreBase * coeffTemps);
+
+    // Pénalité anti-dézoom : coeffZoom vaut (1 - PENALITE_ZOOM_MAX) au zoom de départ, 1 au zoom haut ou plus
+    let ratioZoom = Math.min(1, Math.max(0, (zoomAuClic - ZOOM_SEUIL_BAS) / (ZOOM_SEUIL_HAUT - ZOOM_SEUIL_BAS)));
+    let coeffZoom = (1 - PENALITE_ZOOM_MAX) + PENALITE_ZOOM_MAX * ratioZoom;
+    let malusZoomPct = Math.round((1 - coeffZoom) * 100);
+
+    let pointsManche = Math.round(scoreBase * coeffTemps * coeffZoom);
 
     scoreTotal += pointsManche;
 
     detailsPartie.push({
-      lieu: lieu.nom, temps: parseFloat(tempsEcoule.toFixed(1)), distance: parseFloat(distanceKm.toFixed(1)), points: pointsManche
+      lieu: lieu.nom, temps: parseFloat(tempsEcoule.toFixed(1)), distance: parseFloat(distanceKm.toFixed(1)), zoom: zoomAuClic, points: pointsManche
     });
 
     marqueurReel = L.marker(positionReelle, { icon: iconeReel }).bindPopup(lieu.nom).addTo(map).openPopup();
@@ -449,6 +505,7 @@
       <div class="result-card">
         <div class="result-item"><span class="val"><i class="fa-solid fa-ruler"></i> ${distanceKm.toFixed(1)} km</span><span class="lab">Distance</span></div>
         <div class="result-item"><span class="val">${tempsEcoule.toFixed(1)}s</span><span class="lab">Temps (+${Math.round((coeffTemps - 1) * 100)}%)</span></div>
+        <div class="result-item${malusZoomPct > 0 ? ' penalty' : ''}"><span class="val"><i class="fa-solid fa-magnifying-glass"></i> z${zoomAuClic}</span><span class="lab">${malusZoomPct > 0 ? 'Zoom (-' + malusZoomPct + '%)' : 'Zoom optimal'}</span></div>
         <div class="result-item points"><span class="val">${pointsManche}</span><span class="lab">Points</span></div>
       </div>`;
 
