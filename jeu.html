@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu de Carte - Édition France (Dashboard Compétitif)</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 20px; display: flex; gap: 20px; height: 100vh; box-sizing: border-box; }
+
+        /* Popups */
+        .overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .popup-content { background: white; padding: 40px; border-radius: 15px; text-align: center; max-width: 550px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5); }
+        .popup-content h2 { margin-top: 0; font-size: 2em; color: #333; }
+        
+        .btn-start { background: #007bff; color: white; border: none; padding: 15px 30px; font-size: 1.2em; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; text-decoration: none; display: inline-block; }
+        .btn-start:hover { background: #0056b3; transform: scale(1.05); }
+        .btn-stats-popup { background: #17a2b8; }
+        .btn-stats-popup:hover { background: #138496; }
+        .popup-buttons { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+
+        /* Layout Principal */
+        #game-container { flex: 3; display: flex; flex-direction: column; align-items: center; }
+        #leaderboard-container { flex: 1; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; }
+        
+        #map { height: 60vh; width: 100%; margin: 15px 0; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); cursor: crosshair; }
+        
+        .header-top { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 800px; margin-bottom: 10px; }
+        h1 { margin: 0; color: #333; font-size: 1.8em; }
+        
+        .info-bar { font-size: 1.2em; display: flex; justify-content: space-between; width: 100%; max-width: 800px; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); box-sizing: border-box; }
+        .chrono { color: #d9534f; font-weight: bold; }
+        
+        #resultat { margin: 15px; font-size: 1.1em; line-height: 1.5; min-height: 60px; text-align: center; }
+        
+        .action-btn { padding: 12px 25px; font-size: 1.1em; cursor: pointer; display: none; background: #5cb85c; color: white; border: none; border-radius: 5px; font-weight: bold; margin: 5px auto; }
+        .action-btn:hover { background: #4cae4c; }
+        #btn-rejouer { background: #007bff; }
+        #btn-valider { background: #f0ad4e; }
+        #btn-valider:hover { background: #ec971f; }
+
+        .leaderboard-list { list-style: none; padding: 0; overflow-y: auto; flex-grow: 1; }
+        .leaderboard-list li { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-weight: bold; }
+        .leaderboard-list li span { color: #5cb85c; }
+        .current-player { background-color: #e8f4f8; border-left: 4px solid #007bff; padding-left: 6px; }
+    </style>
+</head>
+
+<body>
+
+    <!-- POPUP DE DÉMARRAGE -->
+    <div id="start-popup" class="overlay">
+        <div class="popup-content">
+            <h2>🌍 OuiMap Dropper</h2>
+            <p>16 lieux à placer sur la carte de France. Plus vous êtes proche et rapide, plus vous marquez de points.</p>
+            <div class="popup-buttons">
+                <button class="btn-start" onclick="demarrerJeu()">Démarrer la partie</button>
+                <a href="scores.html" class="btn-start btn-stats-popup">📊 Voir les stats</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ZONE DE JEU (Gauche) -->
+    <div id="game-container">
+        <div class="header-top">
+            <h1>🇫🇷 Devine où c'est !</h1>
+            <select id="map-style" onchange="changerStyleCarte()">
+                <option value="osm" selected>Carte Classique</option>
+                <option value="epure">Carte Épurée (Clair)</option>
+                <option value="notext">Carte Difficile (Sans texte)</option>
+            </select>
+        </div>
+
+        <div class="info-bar">
+            <span id="consigne">En attente de démarrage...</span>
+            <span class="chrono">⏱️ <span id="timer-display">0.0</span>s</span>
+        </div>
+
+        <div id="map"></div>
+
+        <div id="resultat"></div>
+        <button id="btn-valider" class="action-btn" onclick="validerChoix()">Valider mon choix</button>
+        <button id="btn-suivant" class="action-btn" onclick="prochaineManche()">Manche suivante</button>
+        <button id="btn-rejouer" class="action-btn" onclick="location.reload()">Rejouer une partie</button>
+    </div>
+
+    <!-- CLASSEMENT (Droite) -->
+    <div id="leaderboard-container">
+        <h2 id="titre-leaderboard" style="margin-top: 0; font-size: 1.4em;">🏆 Top Général</h2>
+        <ul id="leaderboard" class="leaderboard-list"></ul>
+    </div>
+
+    <script>
+        // --- VARIABLES GLOBALES ---
+        let lieuxInitiaux = []; 
+        let lieux = [];
+        let indexActuel = 0;
+        let scoreTotal = 0;
+        let detailsPartie = [];
+        let pseudoJoueur = "Anonyme"; // Stocké en début de partie
+
+        // --- GESTION DU MULTIPLICATEUR TEMPS ---
+        // 💡 Modifiez cette variable pour changer l'impact du temps (0.2 = bonus de +20% max)
+        const BONUS_TEMPS_MAX = 0.2; 
+
+        let marqueurReel = null, marqueurJoueur = null, ligne = null;
+        let clicJoueurTemp = null; // Stocke la position avant validation
+        let timerInterval, startTime, tempsEcoule = 0;
+
+        // --- INITIALISATION CARTE ---
+        const centreFrance = [46.2276, 2.2137];
+        const map = L.map('map').setView(centreFrance, 5);
+        let currentTileLayer = null;
+
+        const mapStyles = {
+            osm: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            epure: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+            notext: 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png'
+        };
+
+        function changerStyleCarte() {
+            const choix = document.getElementById('map-style').value;
+            if (currentTileLayer) map.removeLayer(currentTileLayer);
+            currentTileLayer = L.tileLayer(mapStyles[choix], { attribution: '© OpenStreetMap' }).addTo(map);
+        }
+        changerStyleCarte();
+
+        // --- UTILITAIRES ---
+        function melangerLieux(array) {
+            let copie = [...array];
+            for (let i = copie.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copie[i], copie[j]] = [copie[j], copie[i]];
+            }
+            return copie;
+        }
+
+        // --- LOGIQUE DU CLASSEMENT EN DIRECT ---
+        function afficherClassementLive(lieuActuel, scoreActuel = null) {
+            document.getElementById('titre-leaderboard').innerHTML = `🏆 Top : ${lieuActuel.nom}`;
+            const scoresData = JSON.parse(localStorage.getItem('geoScores')) || [];
+            let resultatsLieu = [];
+
+            // Récupère l'historique des autres joueurs pour CE lieu
+            scoresData.forEach(partie => {
+                if (partie.stats) {
+                    const statLieu = partie.stats.find(s => s.lieu === lieuActuel.nom);
+                    if (statLieu) resultatsLieu.push({ nom: partie.nom, points: statLieu.points });
+                }
+            });
+
+            // Si le joueur vient de valider, on ajoute son score temporaire au classement
+            if (scoreActuel !== null) {
+                resultatsLieu.push({ nom: pseudoJoueur + " (Vous)", points: scoreActuel, isCurrent: true });
+            }
+
+            // Tri par points décroissants
+            resultatsLieu.sort((a, b) => b.points - a.points);
+
+            // Affichage
+            const ul = document.getElementById('leaderboard');
+            ul.innerHTML = "";
+            if (resultatsLieu.length === 0) {
+                ul.innerHTML = "<li>Soyez le premier à scorer !</li>";
+                return;
+            }
+
+            resultatsLieu.forEach((res, index) => {
+                let liClass = res.isCurrent ? "class='current-player'" : "";
+                ul.innerHTML += `<li ${liClass}>${index + 1}. ${res.nom} <span>${res.points} pts</span></li>`;
+            });
+        }
+
+        function sauvegarderPartieFinale() {
+            let scores = JSON.parse(localStorage.getItem('geoScores')) || [];
+            scores.push({ nom: pseudoJoueur, score: Math.round(scoreTotal), date: new Date().toISOString(), stats: detailsPartie });
+            scores.sort((a, b) => b.score - a.score);
+            localStorage.setItem('geoScores', JSON.stringify(scores));
+            
+            document.getElementById('titre-leaderboard').innerHTML = `🏆 Top Général (Fin de partie)`;
+            // Recharge un classement global simple à la fin
+            const ul = document.getElementById('leaderboard');
+            ul.innerHTML = "";
+            scores.slice(0, 15).forEach((s, index) => {
+                ul.innerHTML += `<li>${index + 1}. ${s.nom} <span>${s.score} pts</span></li>`;
+            });
+        }
+
+        // --- LOGIQUE DU JEU ---
+        async function demarrerJeu() {
+            pseudoJoueur = prompt("Avant de commencer, entrez votre pseudo :") || "Anonyme";
+
+            if (lieuxInitiaux.length === 0) {
+                try {
+                    const reponse = await fetch('lieux.json');
+                    lieuxInitiaux = await reponse.json();
+                } catch (erreur) {
+                    alert("Erreur : Impossible de lire lieux.json. Êtes-vous sur un serveur local ?");
+                    return; 
+                }
+            }
+
+            document.getElementById('start-popup').style.display = 'none';
+            lieux = melangerLieux(lieuxInitiaux);
+            indexActuel = 0; scoreTotal = 0; detailsPartie = [];
+            chargerManche();
+        }
+
+        function demarrerChrono() {
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                tempsEcoule = (Date.now() - startTime) / 1000;
+                document.getElementById('timer-display').innerText = tempsEcoule.toFixed(1);
+            }, 100);
+        }
+
+        function chargerManche() {
+            if (indexActuel < lieux.length) {
+                document.getElementById('consigne').innerHTML = `Lieu ${indexActuel + 1}/${lieux.length} : <strong>${lieux[indexActuel].nom}</strong>`;
+                document.getElementById('resultat').innerText = "";
+                document.getElementById('btn-suivant').style.display = "none";
+                document.getElementById('btn-valider').style.display = "none";
+                clicJoueurTemp = null;
+
+                if (marqueurReel) map.removeLayer(marqueurReel);
+                if (marqueurJoueur) map.removeLayer(marqueurJoueur);
+                if (ligne) map.removeLayer(ligne);
+
+                afficherClassementLive(lieux[indexActuel]); // Charge le classement du lieu en cours
+                demarrerChrono();
+            } else {
+                document.getElementById('consigne').innerHTML = "Jeu terminé !";
+                document.getElementById('map').style.display = "none";
+                document.getElementById('resultat').innerHTML = `<h2>Score final : ${Math.round(scoreTotal)} points</h2>`;
+                sauvegarderPartieFinale();
+                document.getElementById('btn-rejouer').style.display = "block";
+            }
+        }
+
+        // 1. Placement du point temporaire
+        map.on('click', function (e) {
+            if (document.getElementById('btn-suivant').style.display === "block" || document.getElementById('start-popup').style.display !== "none") return;
+
+            clicJoueurTemp = e.latlng;
+
+            if (marqueurJoueur) {
+                marqueurJoueur.setLatLng(clicJoueurTemp);
+            } else {
+                marqueurJoueur = L.marker(clicJoueurTemp).addTo(map);
+            }
+            
+            document.getElementById('btn-valider').style.display = "block";
+        });
+
+        // 2. Validation et calcul
+        function validerChoix() {
+            if (!clicJoueurTemp) return;
+
+            clearInterval(timerInterval);
+            document.getElementById('btn-valider').style.display = "none";
+
+            const lieu = lieux[indexActuel];
+            const positionReelle = L.latLng(lieu.lat, lieu.lng);
+            const distanceKm = map.distance(clicJoueurTemp, positionReelle) / 1000;
+
+            const maxDist = 800; // Rayon max de tolérance
+            
+            // ANTI-TRICHE DÉZOOM : Formule exponentielle (au cube). 
+            // Un clic approximatif à 100km fera chuter le score drastiquement par rapport à avant.
+            let ratio = Math.max(0, 1 - (distanceKm / maxDist));
+            let scoreBase = 5000 * Math.pow(ratio, 3); 
+            
+            // COEFF TEMPS RÉDUIT : Géré par la variable BONUS_TEMPS_MAX
+            let coeffTemps = tempsEcoule < 15 ? 1 + (BONUS_TEMPS_MAX * (1 - (tempsEcoule / 15))) : 1;
+            let pointsManche = Math.round(scoreBase * coeffTemps);
+            
+            scoreTotal += pointsManche;
+
+            detailsPartie.push({
+                lieu: lieu.nom, temps: parseFloat(tempsEcoule.toFixed(1)), distance: parseFloat(distanceKm.toFixed(1)), points: pointsManche
+            });
+
+            // Mise à jour de la carte
+            marqueurReel = L.marker(positionReelle).bindPopup(lieu.nom).addTo(map).openPopup();
+            ligne = L.polyline([clicJoueurTemp, positionReelle], { color: 'red', dashArray: '5, 5' }).addTo(map);
+            map.fitBounds(ligne.getBounds(), { padding: [50, 50] });
+
+            // Mise à jour des résultats et du classement live
+            document.getElementById('resultat').innerHTML =
+                `📍 Distance : <strong>${distanceKm.toFixed(1)} km</strong><br>` +
+                `⏱️ Temps : ${tempsEcoule.toFixed(1)}s (Bonus : +${Math.round((coeffTemps-1)*100)}%)<br>` +
+                `⭐ Points gagnés : <strong>${pointsManche}</strong>`;
+
+            afficherClassementLive(lieu, pointsManche);
+            document.getElementById('btn-suivant').style.display = "block";
+        }
+
+        function prochaineManche() {
+            indexActuel++; chargerManche(); map.setView(centreFrance, 5);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistiques - Dropper Geoguessr</title>
+    
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 40px; display: flex; justify-content: center; }
+        
+        .dashboard-container { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 900px; width: 100%; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
+        h1 { margin: 0; color: #333; }
+        
+        .btn-back { background: #007bff; color: white; text-decoration: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; transition: 0.2s; }
+        .btn-back:hover { background: #0056b3; }
+        
+        .controls { display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 10px; }
+        label { font-weight: bold; color: #555; font-size: 1.1em; }
+        select { padding: 12px; font-size: 1.1em; border-radius: 5px; border: 1px solid #ccc; cursor: pointer; max-width: 400px; }
+        
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { padding: 15px; text-align: center; border-bottom: 1px solid #ddd; }
+        th { background-color: #17a2b8; color: white; font-size: 1.1em; }
+        tr:nth-child(even) { background-color: #f8f9fa; }
+        tr:hover { background-color: #e2e6ea; }
+        
+        .medal { font-size: 1.8em; }
+        .empty-state { text-align: center; color: #777; padding: 40px; font-size: 1.2em; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <div class="header">
+            <h1>📊 Base de données Compétitive</h1>
+            <a href="jeu.html" class="btn-back">⬅ Retour au jeu</a>
+        </div>
+        
+        <div class="controls">
+            <label for="select-lieu">Sélectionnez un lieu pour comparer les performances :</label>
+            <select id="select-lieu" onchange="afficherTableauLieu()">
+                <option value="">-- Choisissez un lieu --</option>
+            </select>
+        </div>
+        
+        <div id="tableau-stats-container">
+            <div class="empty-state">Sélectionnez un lieu ci-dessus pour voir le classement.</div>
+        </div>
+    </div>
+
+    <script>
+        // Liste des lieux pour générer le menu déroulant
+// Remplir le menu déroulant au chargement depuis le JSON
+        window.onload = async function() {
+            try {
+                const reponse = await fetch('lieux.json');
+                const lieuxData = await reponse.json();
+                
+                const select = document.getElementById('select-lieu');
+                
+                // On extrait uniquement les noms des lieux et on les trie
+                const lieuxTries = lieuxData.map(l => l.nom).sort();
+                
+                lieuxTries.forEach(nom => {
+                    select.innerHTML += `<option value="${nom}">${nom}</option>`;
+                });
+            } catch (erreur) {
+                document.getElementById('tableau-stats-container').innerHTML = 
+                    `<div class="empty-state" style="color: red;">Erreur de lecture de lieux.json.</div>`;
+                console.error(erreur);
+            }
+        };
+
+
+        function afficherTableauLieu() {
+            const lieuSelect = document.getElementById('select-lieu').value;
+            const container = document.getElementById('tableau-stats-container');
+            
+            if (!lieuSelect) {
+                container.innerHTML = '<div class="empty-state">Sélectionnez un lieu ci-dessus pour voir le classement.</div>';
+                return;
+            }
+
+            // Récupération des données depuis le navigateur
+            const scores = JSON.parse(localStorage.getItem('geoScores')) || [];
+            let resultats = [];
+
+            scores.forEach(partie => {
+                if(partie.stats) {
+                    const statLieu = partie.stats.find(s => s.lieu === lieuSelect);
+                    if (statLieu) {
+                        resultats.push({ nom: partie.nom, date: partie.date, ...statLieu });
+                    }
+                }
+            });
+
+            if (resultats.length === 0) {
+                container.innerHTML = `<div class="empty-state" style="color: #d9534f;">Personne n'a encore enregistré de données sur ce lieu. Jouez une partie complète !</div>`;
+                return;
+            }
+
+            // Tri par les points les plus élevés
+            resultats.sort((a, b) => b.points - a.points);
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rang</th>
+                            <th>Joueur</th>
+                            <th>Distance</th>
+                            <th>Temps</th>
+                            <th>Score (Pts)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            resultats.forEach((res, index) => {
+                let medaille = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `<strong>${index + 1}</strong>`;
+                let dateCourte = res.date ? new Date(res.date).toLocaleDateString('fr-FR') : "";
+                
+                html += `
+                    <tr>
+                        <td class="medal">${medaille}</td>
+                        <td><strong>${res.nom}</strong> <br><span style="font-size:0.8em; color:#777;">${dateCourte}</span></td>
+                        <td>${res.distance} km</td>
+                        <td>${res.temps} s</td>
+                        <td style="color: #28a745; font-weight: bold; font-size: 1.2em;">${res.points}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
