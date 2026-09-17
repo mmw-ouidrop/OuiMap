@@ -1,0 +1,250 @@
+/* ============================================================
+   OuiMap Dropper — Design System
+   Conforme à la Charte Graphique OUIDROP 2026
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* --- Couleurs principales (charte OUIDROP 2026) --- */
+  --bleu-fonce: #0D2E5B;     /* Dominant : logo, fonds principaux, textes structurants */
+  --bleu-intense: #1E3A8A;   /* Structure : liens, éléments interactifs, accents graphiques */
+  --bleu-vif: #3B82F6;       /* Accent : CTA, interactions, highlights, focus */
+  --bleu-vif-hover: #2563eb;
+  --bleu-clair: #E5EAF5;     /* Support : fonds, zones UI, aplats secondaires */
+  --bleu-clair-dark: #D2DEF3;
+  --rouge-signal: #E22424;   /* Accent fort : points d'attention, ponctuel et fonctionnel */
+  --rouge-signal-dark: #b91c1c;
+  --blanc: #FFFFFF;
+  --gris-fonce: #333333;     /* Fond foncé alternatif (cf. charte logo) */
+
+  /* --- Rôles sémantiques (repris de la palette ci-dessus, aucune couleur hors charte) --- */
+  --ink: var(--bleu-fonce);
+  --ink-soft: #51617e;       /* dérivé du bleu foncé, pour le texte secondaire */
+  --parchment: var(--bleu-clair);
+  --parchment-dark: var(--bleu-clair-dark);
+  --card: var(--blanc);
+  --brass: var(--bleu-vif);
+  --brass-dark: var(--bleu-vif-hover);
+  --coral: var(--rouge-signal);
+  --coral-dark: var(--rouge-signal-dark);
+  --forest: var(--bleu-intense);       /* "points / succès" — reste dans la palette */
+  --forest-light: var(--bleu-clair-dark);
+  --line: #c7d3ea;
+  --shadow: rgba(13, 46, 91, 0.16);
+
+  --radius-s: 6px;
+  --radius-m: 12px;
+  --radius-l: 20px;
+
+  --font-display: 'Saira Condensed', 'Arial Narrow', sans-serif; /* titres, CTA, chiffres clés */
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; /* texte courant */
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--parchment);
+  color: var(--ink);
+  margin: 0;
+}
+
+h1, h2, h3, h4, .display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  line-height: 1.0;
+}
+h1 { font-weight: 700; }
+h3 { font-weight: 600; }
+h4 { font-weight: 500; }
+
+a { color: inherit; }
+
+/* ---------- Barre de navigation partagée ---------- */
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 28px;
+  background: var(--bleu-fonce);
+  color: var(--blanc);
+  box-shadow: 0 2px 10px var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 500;
+}
+
+.top-nav .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.3em;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #fff;
+  text-decoration: none;
+}
+
+.top-nav .brand .o-mark {
+  width: 30px; height: 30px;
+  background: var(--bleu-vif);
+  color: #fff;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.05em;
+  flex-shrink: 0;
+}
+
+.top-nav .nav-links {
+  display: flex;
+  gap: 8px;
+}
+
+.top-nav .nav-links a {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  text-decoration: none;
+  color: #cfdcf4;
+  padding: 9px 16px;
+  border-radius: var(--radius-s);
+  font-weight: 500;
+  font-size: 0.95em;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.top-nav .nav-links a:hover,
+.top-nav .nav-links a.active {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+.top-nav .nav-links a.active { color: var(--bleu-vif); background: rgba(59,130,246,0.16); }
+
+.player-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.1);
+  padding: 6px 14px 6px 8px;
+  border-radius: 999px;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.player-chip .avatar {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--bleu-vif);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700;
+  font-size: 0.85em;
+  font-family: var(--font-display);
+}
+
+/* ---------- Boutons (Saira Condensed Bold, cf. charte CTA) ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05em;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 13px 26px;
+  border-radius: var(--radius-s);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease;
+  text-decoration: none;
+}
+
+.btn:active { transform: scale(0.97); }
+
+.btn-primary { background: var(--bleu-fonce); color: #fff; }
+.btn-primary:hover { background: #0a2447; box-shadow: 0 4px 14px var(--shadow); }
+
+.btn-brass { background: var(--bleu-vif); color: #fff; }
+.btn-brass:hover { background: var(--bleu-vif-hover); box-shadow: 0 4px 14px var(--shadow); }
+
+.btn-forest { background: var(--bleu-intense); color: #fff; }
+.btn-forest:hover { background: #16296b; box-shadow: 0 4px 14px var(--shadow); }
+
+.btn-outline {
+  background: transparent;
+  color: var(--ink);
+  border: 1.5px solid var(--line);
+}
+.btn-outline:hover { border-color: var(--bleu-fonce); background: rgba(13,46,91,0.05); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink-soft);
+}
+.btn-ghost:hover { color: var(--ink); }
+
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+.btn-block { width: 100%; }
+
+/* ---------- Cartes / conteneurs ---------- */
+.card {
+  background: var(--card);
+  border-radius: var(--radius-m);
+  box-shadow: 0 4px 18px var(--shadow);
+  border: 1px solid var(--line);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 0.78em;
+  font-weight: 600;
+}
+.badge-brass { background: #dbe8fd; color: var(--bleu-vif-hover); }
+.badge-forest { background: var(--bleu-clair-dark); color: var(--bleu-intense); }
+.badge-coral { background: #fbdada; color: var(--rouge-signal-dark); }
+
+/* ---------- Formulaires ---------- */
+input[type="text"], select {
+  font-family: var(--font-body);
+  font-size: 1em;
+  padding: 11px 14px;
+  border-radius: var(--radius-s);
+  border: 1.5px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+}
+input[type="text"]:focus, select:focus {
+  outline: none;
+  border-color: var(--bleu-vif);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
+}
+
+/* Accessibilité : focus visible clavier */
+a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible {
+  outline: 3px solid var(--bleu-vif);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+/* ---------- Utilitaires ---------- */
+.muted { color: var(--ink-soft); }
+.text-center { text-align: center; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }

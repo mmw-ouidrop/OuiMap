@@ -1,141 +1,457 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Statistiques - Dropper Geoguessr</title>
-    
-    <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 40px; display: flex; justify-content: center; }
-        
-        .dashboard-container { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 900px; width: 100%; }
-        
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
-        h1 { margin: 0; color: #333; }
-        
-        .btn-back { background: #007bff; color: white; text-decoration: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; transition: 0.2s; }
-        .btn-back:hover { background: #0056b3; }
-        
-        .controls { display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 10px; }
-        label { font-weight: bold; color: #555; font-size: 1.1em; }
-        select { padding: 12px; font-size: 1.1em; border-radius: 5px; border: 1px solid #ccc; cursor: pointer; max-width: 400px; }
-        
-        table { width: 100%; border-collapse: collapse; background: white; }
-        th, td { padding: 15px; text-align: center; border-bottom: 1px solid #ddd; }
-        th { background-color: #17a2b8; color: white; font-size: 1.1em; }
-        tr:nth-child(even) { background-color: #f8f9fa; }
-        tr:hover { background-color: #e2e6ea; }
-        
-        .medal { font-size: 1.8em; }
-        .empty-state { text-align: center; color: #777; padding: 40px; font-size: 1.2em; font-style: italic; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Statistiques — OuiMap Dropper</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  .page { max-width: 1150px; margin: 0 auto; padding: 28px 24px 60px; }
+  .page-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 24px; }
+  .page-header h1 { margin: 0 0 4px; font-size: 1.7em; display: flex; align-items: center; gap: 10px; }
+  .page-header h1 i { color: var(--brass); }
+  .page-header p { margin: 0; color: var(--ink-soft); }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+  .kpi-card { padding: 18px 20px; }
+  .kpi-card .kpi-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; font-size: 0.95em; }
+  .kpi-card .kpi-val { font-family: var(--font-display); font-size: 1.7em; font-weight: 700; line-height: 1; }
+  .kpi-card .kpi-lab { color: var(--ink-soft); font-size: 0.85em; margin-top: 5px; }
+
+  .tabs { display: flex; gap: 6px; border-bottom: 2px solid var(--line); margin-bottom: 24px; flex-wrap: wrap; }
+  .tab-btn {
+    background: none; border: none; cursor: pointer; padding: 11px 18px; font-family: var(--font-body);
+    font-weight: 600; font-size: 0.98em; color: var(--ink-soft); border-bottom: 3px solid transparent; margin-bottom: -2px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active { color: var(--ink); border-bottom-color: var(--brass); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .controls-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 22px; }
+  .field { display: flex; flex-direction: column; gap: 7px; }
+  .field label { font-weight: 600; font-size: 0.9em; }
+  .field select, .field input { min-width: 240px; }
+
+  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: var(--radius-m); overflow: hidden; }
+  th, td { padding: 13px 15px; text-align: center; border-bottom: 1px solid var(--line); }
+  th { background-color: var(--ink); color: #fff; font-size: 0.92em; font-weight: 600; }
+  td { font-size: 0.94em; }
+  tbody tr:hover { background-color: var(--parchment-dark); }
+  td.name-cell { text-align: left; display: flex; align-items: center; gap: 10px; }
+  .table-wrap { border-radius: var(--radius-m); box-shadow: 0 4px 18px var(--shadow); border: 1px solid var(--line); overflow: hidden; }
+
+  .medal { font-size: 1.5em; }
+  .empty-state { text-align: center; color: var(--ink-soft); padding: 50px 20px; font-style: italic; }
+  .empty-state i { display: block; font-size: 2em; margin-bottom: 12px; color: var(--brass); opacity: 0.6; }
+
+  .mini-avatar-table { width: 30px; height: 30px; border-radius: 50%; background: var(--brass); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75em; flex-shrink: 0; }
+
+  .profile-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .profile-header .avatar-xl { width: 58px; height: 58px; border-radius: 50%; background: var(--brass); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.3em; flex-shrink: 0; }
+  .profile-header h2 { margin: 0; }
+  .profile-stat-row { display: flex; gap: 26px; flex-wrap: wrap; margin-top: 6px; }
+  .profile-stat-row .stat { text-align: left; }
+  .profile-stat-row .stat .val { font-weight: 700; font-size: 1.1em; }
+  .profile-stat-row .stat .lab { font-size: 0.8em; color: var(--ink-soft); }
+
+  .chart-card { padding: 20px; margin-bottom: 24px; }
+  .chart-card h3 { margin: 0 0 14px; font-size: 1.05em; display: flex; align-items: center; gap: 8px; }
+  .chart-card h3 i { color: var(--brass); }
+  canvas { max-height: 280px; }
+
+  .data-mgmt { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+  .danger-zone { border: 1px dashed #E2242455; padding: 18px 20px; border-radius: var(--radius-m); margin-top: 26px; }
+  .danger-zone h3 { color: var(--coral-dark); margin: 0 0 6px; font-size: 1em; display: flex; align-items: center; gap: 8px; }
+  .danger-zone p { color: var(--ink-soft); font-size: 0.9em; margin: 0 0 14px; }
+
+  #import-file { display: none; }
+
+  @media (max-width: 800px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    table, thead, tbody, th, td, tr { display: block; }
+    thead { display: none; }
+    tbody tr { border-bottom: 1px solid var(--line); padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; }
+    td { text-align: left; border: none; padding: 4px 0; display: flex; justify-content: space-between; }
+    td::before { content: attr(data-label); font-weight: 600; color: var(--ink-soft); font-size: 0.82em; }
+    td.name-cell::before { content: ''; }
+  }
+  @media (max-width: 480px) { .kpi-grid { grid-template-columns: 1fr; } }
+</style>
 </head>
 <body>
 
-    <div class="dashboard-container">
-        <div class="header">
-            <h1>📊 Base de données Compétitive</h1>
-            <a href="jeu.html" class="btn-back">⬅ Retour au jeu</a>
-        </div>
-        
-        <div class="controls">
-            <label for="select-lieu">Sélectionnez un lieu pour comparer les performances :</label>
-            <select id="select-lieu" onchange="afficherTableauLieu()">
-                <option value="">-- Choisissez un lieu --</option>
-            </select>
-        </div>
-        
-        <div id="tableau-stats-container">
-            <div class="empty-state">Sélectionnez un lieu ci-dessus pour voir le classement.</div>
-        </div>
+<div id="top-nav-slot"></div>
+
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1><i class="fa-solid fa-chart-column"></i> Base de données compétitive</h1>
+      <p>Toutes les statistiques sont stockées localement, sur cet appareil.</p>
     </div>
+    <a href="jeu.html" class="btn btn-brass"><i class="fa-solid fa-play"></i> Nouvelle partie</a>
+  </div>
 
-    <script>
-        // Liste des lieux pour générer le menu déroulant
-// Remplir le menu déroulant au chargement depuis le JSON
-        window.onload = async function() {
-            try {
-                const reponse = await fetch('lieux.json');
-                const lieuxData = await reponse.json();
-                
-                const select = document.getElementById('select-lieu');
-                
-                // On extrait uniquement les noms des lieux et on les trie
-                const lieuxTries = lieuxData.map(l => l.nom).sort();
-                
-                lieuxTries.forEach(nom => {
-                    select.innerHTML += `<option value="${nom}">${nom}</option>`;
-                });
-            } catch (erreur) {
-                document.getElementById('tableau-stats-container').innerHTML = 
-                    `<div class="empty-state" style="color: red;">Erreur de lecture de lieux.json.</div>`;
-                console.error(erreur);
-            }
-        };
+  <div id="kpi-grid" class="kpi-grid"></div>
 
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="lieu" onclick="changerOnglet('lieu')"><i class="fa-solid fa-map-pin"></i> Par lieu</button>
+    <button class="tab-btn" data-tab="global" onclick="changerOnglet('global')"><i class="fa-solid fa-globe"></i> Classement général</button>
+    <button class="tab-btn" data-tab="joueur" onclick="changerOnglet('joueur')"><i class="fa-solid fa-user"></i> Profil joueur</button>
+    <button class="tab-btn" data-tab="donnees" onclick="changerOnglet('donnees')"><i class="fa-solid fa-database"></i> Données</button>
+  </div>
 
-        function afficherTableauLieu() {
-            const lieuSelect = document.getElementById('select-lieu').value;
-            const container = document.getElementById('tableau-stats-container');
-            
-            if (!lieuSelect) {
-                container.innerHTML = '<div class="empty-state">Sélectionnez un lieu ci-dessus pour voir le classement.</div>';
-                return;
-            }
+  <!-- ONGLET PAR LIEU -->
+  <div id="panel-lieu" class="tab-panel active">
+    <div class="controls-row">
+      <div class="field">
+        <label for="select-lieu"><i class="fa-solid fa-location-dot"></i> Sélectionnez un lieu</label>
+        <select id="select-lieu" onchange="afficherTableauLieu()">
+          <option value="">-- Choisissez un lieu --</option>
+        </select>
+      </div>
+    </div>
+    <div id="tableau-stats-container">
+      <div class="empty-state"><i class="fa-regular fa-compass"></i>Sélectionnez un lieu ci-dessus pour voir le classement.</div>
+    </div>
+  </div>
 
-            // Récupération des données depuis le navigateur
-            const scores = JSON.parse(localStorage.getItem('geoScores')) || [];
-            let resultats = [];
+  <!-- ONGLET CLASSEMENT GÉNÉRAL -->
+  <div id="panel-global" class="tab-panel">
+    <div class="controls-row">
+      <div class="field">
+        <label for="search-global"><i class="fa-solid fa-magnifying-glass"></i> Rechercher un joueur</label>
+        <input type="text" id="search-global" placeholder="Nom du joueur..." oninput="afficherClassementGlobal()">
+      </div>
+      <div class="field">
+        <label for="sort-global"><i class="fa-solid fa-arrow-down-wide-short"></i> Trier par</label>
+        <select id="sort-global" onchange="afficherClassementGlobal()">
+          <option value="meilleur">Meilleur score</option>
+          <option value="moyenne">Score moyen</option>
+          <option value="parties">Nombre de parties</option>
+          <option value="recent">Dernière partie</option>
+        </select>
+      </div>
+    </div>
+    <div id="classement-global-container"></div>
+  </div>
 
-            scores.forEach(partie => {
-                if(partie.stats) {
-                    const statLieu = partie.stats.find(s => s.lieu === lieuSelect);
-                    if (statLieu) {
-                        resultats.push({ nom: partie.nom, date: partie.date, ...statLieu });
-                    }
-                }
-            });
+  <!-- ONGLET PROFIL JOUEUR -->
+  <div id="panel-joueur" class="tab-panel">
+    <div class="controls-row">
+      <div class="field">
+        <label for="select-joueur"><i class="fa-solid fa-user"></i> Sélectionnez un joueur</label>
+        <select id="select-joueur" onchange="afficherProfilJoueur()">
+          <option value="">-- Choisissez un joueur --</option>
+        </select>
+      </div>
+    </div>
+    <div id="profil-joueur-container">
+      <div class="empty-state"><i class="fa-regular fa-id-card"></i>Sélectionnez un joueur pour voir son détail.</div>
+    </div>
+  </div>
 
-            if (resultats.length === 0) {
-                container.innerHTML = `<div class="empty-state" style="color: #d9534f;">Personne n'a encore enregistré de données sur ce lieu. Jouez une partie complète !</div>`;
-                return;
-            }
+  <!-- ONGLET DONNÉES -->
+  <div id="panel-donnees" class="tab-panel">
+    <div class="card" style="padding:22px 24px;">
+      <h3 style="margin-top:0;"><i class="fa-solid fa-box-archive"></i> Sauvegarde &amp; restauration</h3>
+      <p class="muted">Les scores sont stockés uniquement dans ce navigateur. Exportez-les pour les garder, ou pour les transférer vers un autre appareil.</p>
+      <div class="data-mgmt">
+        <button class="btn btn-outline" onclick="exporterDonnees()"><i class="fa-solid fa-download"></i> Exporter (.json)</button>
+        <button class="btn btn-outline" onclick="document.getElementById('import-file').click()"><i class="fa-solid fa-upload"></i> Importer un fichier</button>
+        <input type="file" id="import-file" accept="application/json" onchange="importerDonnees(event)">
+      </div>
 
-            // Tri par les points les plus élevés
-            resultats.sort((a, b) => b.points - a.points);
+      <div class="danger-zone">
+        <h3><i class="fa-solid fa-triangle-exclamation"></i> Zone sensible</h3>
+        <p>Cette action supprime définitivement toutes les parties enregistrées sur cet appareil.</p>
+        <button class="btn" style="background:var(--coral); color:#fff;" onclick="reinitialiserDonnees()"><i class="fa-solid fa-trash"></i> Effacer toutes les données</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-            let html = `
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Rang</th>
-                            <th>Joueur</th>
-                            <th>Distance</th>
-                            <th>Temps</th>
-                            <th>Score (Pts)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
+<script src="profil.js"></script>
+<script>
+  injecterNav('scores');
 
-            resultats.forEach((res, index) => {
-                let medaille = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `<strong>${index + 1}</strong>`;
-                let dateCourte = res.date ? new Date(res.date).toLocaleDateString('fr-FR') : "";
-                
-                html += `
-                    <tr>
-                        <td class="medal">${medaille}</td>
-                        <td><strong>${res.nom}</strong> <br><span style="font-size:0.8em; color:#777;">${dateCourte}</span></td>
-                        <td>${res.distance} km</td>
-                        <td>${res.temps} s</td>
-                        <td style="color: #28a745; font-weight: bold; font-size: 1.2em;">${res.points}</td>
-                    </tr>
-                `;
-            });
+  let lieuxData = [];
+  let chartLieu = null, chartJoueur = null;
 
-            html += `</tbody></table>`;
-            container.innerHTML = html;
-        }
-    </script>
+  // --- Chargement des lieux pour les menus déroulants ---
+  window.addEventListener('DOMContentLoaded', async () => {
+    afficherKPI();
+    try {
+      const reponse = await fetch('lieux.json');
+      lieuxData = await reponse.json();
+      const select = document.getElementById('select-lieu');
+      lieuxData.map(l => l.nom).sort().forEach(nom => {
+        select.innerHTML += `<option value="${nom}">${nom}</option>`;
+      });
+    } catch (erreur) {
+      document.getElementById('tableau-stats-container').innerHTML =
+        `<div class="empty-state" style="color:#E22424;"><i class="fa-solid fa-triangle-exclamation"></i>Erreur de lecture de lieux.json.</div>`;
+    }
+    remplirSelectJoueurs();
+    afficherClassementGlobal();
+  });
+
+  // --- Onglets ---
+  function changerOnglet(nom) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === nom));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + nom).classList.add('active');
+  }
+
+  // --- KPI globaux ---
+  function afficherKPI() {
+    const scores = getScores();
+    const profils = getProfils();
+    const grid = document.getElementById('kpi-grid');
+
+    if (scores.length === 0) {
+      grid.innerHTML = `
+        <div class="card kpi-card"><div class="kpi-val">0</div><div class="kpi-lab">Aucune partie jouée</div></div>
+      `;
+      return;
+    }
+
+    const meilleurScore = Math.max(...scores.map(s => s.score));
+    const totalDistances = [];
+    scores.forEach(p => (p.stats || []).forEach(s => totalDistances.push(s.distance)));
+    const distMoy = totalDistances.length ? (totalDistances.reduce((a, b) => a + b, 0) / totalDistances.length) : 0;
+
+    const kpis = [
+      { icon: 'fa-gamepad', color: 'var(--forest)', bg: 'var(--forest-light)', val: scores.length, lab: 'Parties jouées' },
+      { icon: 'fa-users', color: 'var(--bleu-fonce)', bg: 'var(--bleu-clair)', val: profils.length, lab: 'Joueurs distincts' },
+      { icon: 'fa-trophy', color: 'var(--brass-dark)', bg: '#dbe8fd', val: meilleurScore, lab: 'Meilleur score' },
+      { icon: 'fa-ruler', color: 'var(--coral-dark)', bg: '#fbdada', val: distMoy.toFixed(1) + ' km', lab: 'Distance moyenne' },
+    ];
+
+    grid.innerHTML = kpis.map(k => `
+      <div class="card kpi-card">
+        <div class="kpi-icon" style="background:${k.bg}; color:${k.color};"><i class="fa-solid ${k.icon}"></i></div>
+        <div class="kpi-val">${k.val}</div>
+        <div class="kpi-lab">${k.lab}</div>
+      </div>
+    `).join('');
+  }
+
+  // --- Onglet PAR LIEU ---
+  function afficherTableauLieu() {
+    const lieuSelect = document.getElementById('select-lieu').value;
+    const container = document.getElementById('tableau-stats-container');
+
+    if (!lieuSelect) {
+      container.innerHTML = '<div class="empty-state"><i class="fa-regular fa-compass"></i>Sélectionnez un lieu ci-dessus pour voir le classement.</div>';
+      return;
+    }
+
+    const scores = getScores();
+    let resultats = [];
+    scores.forEach(partie => {
+      if (partie.stats) {
+        const statLieu = partie.stats.find(s => s.lieu === lieuSelect);
+        if (statLieu) resultats.push({ nom: partie.nom, date: partie.date, ...statLieu });
+      }
+    });
+
+    if (resultats.length === 0) {
+      container.innerHTML = `<div class="empty-state" style="color:#E22424;"><i class="fa-solid fa-map-pin"></i>Personne n'a encore joué ce lieu. Lancez une partie complète !</div>`;
+      return;
+    }
+
+    resultats.sort((a, b) => b.points - a.points);
+
+    let html = `<div class="table-wrap"><table><thead><tr>
+      <th>Rang</th><th>Joueur</th><th>Distance</th><th>Temps</th><th>Score</th>
+    </tr></thead><tbody>`;
+
+    resultats.forEach((res, index) => {
+      let medaille = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `<strong>${index + 1}</strong>`;
+      let dateCourte = res.date ? new Date(res.date).toLocaleDateString('fr-FR') : "";
+      html += `
+        <tr>
+          <td data-label="Rang" class="medal">${medaille}</td>
+          <td data-label="Joueur" class="name-cell"><span class="mini-avatar-table">${getInitiales(res.nom)}</span> <div><strong>${res.nom}</strong><br><span style="font-size:0.8em; color:var(--ink-soft);">${dateCourte}</span></div></td>
+          <td data-label="Distance">${res.distance} km</td>
+          <td data-label="Temps">${res.temps} s</td>
+          <td data-label="Score" style="color:var(--forest); font-weight:700; font-size:1.1em;">${res.points}</td>
+        </tr>`;
+    });
+    html += `</tbody></table></div>`;
+
+    // Mini graphique de comparaison des points
+    html += `<div class="card chart-card"><h3><i class="fa-solid fa-chart-simple"></i> Comparaison des scores sur ce lieu</h3><canvas id="chart-lieu"></canvas></div>`;
+    container.innerHTML = html;
+
+    if (chartLieu) chartLieu.destroy();
+    const ctx = document.getElementById('chart-lieu');
+    const top = resultats.slice(0, 10);
+    chartLieu = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: top.map(r => r.nom),
+        datasets: [{ label: 'Points', data: top.map(r => r.points), backgroundColor: '#3B82F6', borderRadius: 6 }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, max: 5000 } }
+      }
+    });
+  }
+
+  // --- Onglet CLASSEMENT GÉNÉRAL ---
+  function afficherClassementGlobal() {
+    const container = document.getElementById('classement-global-container');
+    let profils = getProfils();
+
+    const recherche = (document.getElementById('search-global').value || '').toLowerCase().trim();
+    if (recherche) profils = profils.filter(p => p.nom.toLowerCase().includes(recherche));
+
+    const tri = document.getElementById('sort-global').value;
+    if (tri === 'moyenne') profils.sort((a, b) => b.scoreMoyen - a.scoreMoyen);
+    else if (tri === 'parties') profils.sort((a, b) => b.parties - a.parties);
+    else if (tri === 'recent') profils.sort((a, b) => new Date(b.derniereDate) - new Date(a.derniereDate));
+    else profils.sort((a, b) => b.meilleurScore - a.meilleurScore);
+
+    if (profils.length === 0) {
+      container.innerHTML = `<div class="empty-state"><i class="fa-regular fa-face-frown"></i>Aucun joueur ne correspond à cette recherche.</div>`;
+      return;
+    }
+
+    let html = `<div class="table-wrap"><table><thead><tr>
+      <th>Rang</th><th>Joueur</th><th>Parties</th><th>Meilleur score</th><th>Score moyen</th><th>Dernière partie</th>
+    </tr></thead><tbody>`;
+    profils.forEach((p, index) => {
+      let medaille = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `<strong>${index + 1}</strong>`;
+      html += `
+        <tr>
+          <td data-label="Rang" class="medal">${medaille}</td>
+          <td data-label="Joueur" class="name-cell"><span class="mini-avatar-table">${getInitiales(p.nom)}</span> <strong>${p.nom}</strong></td>
+          <td data-label="Parties">${p.parties}</td>
+          <td data-label="Meilleur score" style="color:var(--forest); font-weight:700;">${p.meilleurScore}</td>
+          <td data-label="Score moyen">${p.scoreMoyen}</td>
+          <td data-label="Dernière partie">${p.derniereDate ? new Date(p.derniereDate).toLocaleDateString('fr-FR') : '—'}</td>
+        </tr>`;
+    });
+    html += `</tbody></table></div>`;
+    container.innerHTML = html;
+  }
+
+  // --- Onglet PROFIL JOUEUR ---
+  function remplirSelectJoueurs() {
+    const select = document.getElementById('select-joueur');
+    getProfils().forEach(p => {
+      select.innerHTML += `<option value="${p.nom}">${p.nom}</option>`;
+    });
+  }
+
+  function afficherProfilJoueur() {
+    const nom = document.getElementById('select-joueur').value;
+    const container = document.getElementById('profil-joueur-container');
+    if (!nom) {
+      container.innerHTML = '<div class="empty-state"><i class="fa-regular fa-id-card"></i>Sélectionnez un joueur pour voir son détail.</div>';
+      return;
+    }
+
+    const scores = getScores().filter(s => s.nom === nom).sort((a, b) => new Date(a.date) - new Date(b.date));
+    const profil = getProfils().find(p => p.nom === nom);
+
+    let html = `
+      <div class="profile-header">
+        <div class="avatar-xl">${getInitiales(nom)}</div>
+        <div>
+          <h2>${nom}</h2>
+          <div class="profile-stat-row">
+            <div class="stat"><div class="val">${profil.parties}</div><div class="lab">Parties jouées</div></div>
+            <div class="stat"><div class="val">${profil.meilleurScore}</div><div class="lab">Meilleur score</div></div>
+            <div class="stat"><div class="val">${profil.scoreMoyen}</div><div class="lab">Score moyen</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card chart-card"><h3><i class="fa-solid fa-chart-line"></i> Progression du score par partie</h3><canvas id="chart-joueur"></canvas></div>
+    `;
+
+    // Détail des meilleurs points par lieu pour ce joueur
+    const meilleursParLieu = new Map();
+    scores.forEach(partie => (partie.stats || []).forEach(s => {
+      if (!meilleursParLieu.has(s.lieu) || meilleursParLieu.get(s.lieu).points < s.points) {
+        meilleursParLieu.set(s.lieu, s);
+      }
+    }));
+    const lignes = Array.from(meilleursParLieu.entries()).sort((a, b) => b[1].points - a[1].points);
+
+    html += `<div class="table-wrap"><table><thead><tr><th>Lieu</th><th>Meilleure distance</th><th>Meilleur temps</th><th>Meilleur score</th></tr></thead><tbody>`;
+    lignes.forEach(([lieu, s]) => {
+      html += `<tr>
+        <td data-label="Lieu" style="text-align:left;"><strong>${lieu}</strong></td>
+        <td data-label="Distance">${s.distance} km</td>
+        <td data-label="Temps">${s.temps} s</td>
+        <td data-label="Score" style="color:var(--forest); font-weight:700;">${s.points}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+
+    container.innerHTML = html;
+
+    if (chartJoueur) chartJoueur.destroy();
+    const ctx = document.getElementById('chart-joueur');
+    chartJoueur = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: scores.map((s, i) => 'Partie ' + (i + 1)),
+        datasets: [{
+          label: 'Score total', data: scores.map(s => s.score),
+          borderColor: '#1E3A8A', backgroundColor: 'rgba(30,58,138,0.12)', fill: true, tension: 0.3, pointBackgroundColor: '#1E3A8A'
+        }]
+      },
+      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+  }
+
+  // --- Gestion des données ---
+  function exporterDonnees() {
+    const scores = getScores();
+    const blob = new Blob([JSON.stringify(scores, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ouimap-dropper-scores-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importerDonnees(event) {
+    const fichier = event.target.files[0];
+    if (!fichier) return;
+    const lecteur = new FileReader();
+    lecteur.onload = () => {
+      try {
+        const importees = JSON.parse(lecteur.result);
+        if (!Array.isArray(importees)) throw new Error('Format invalide');
+        const actuelles = getScores();
+        const fusion = actuelles.concat(importees);
+        localStorage.setItem('geoScores', JSON.stringify(fusion));
+        alert(`${importees.length} partie(s) importée(s) avec succès.`);
+        location.reload();
+      } catch (e) {
+        alert("Le fichier sélectionné n'est pas un export valide de OuiMap Dropper.");
+      }
+    };
+    lecteur.readAsText(fichier);
+    event.target.value = '';
+  }
+
+  function reinitialiserDonnees() {
+    if (confirm("Supprimer définitivement toutes les parties enregistrées sur cet appareil ? Cette action est irréversible.")) {
+      localStorage.removeItem('geoScores');
+      location.reload();
+    }
+  }
+</script>
 </body>
 </html>
