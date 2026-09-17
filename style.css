@@ -43,12 +43,16 @@
 
 * { box-sizing: border-box; }
 
+html, body { max-width: 100%; overflow-x: hidden; }
+
 body {
   font-family: var(--font-body);
   background: var(--parchment);
   color: var(--ink);
   margin: 0;
 }
+
+img, svg, canvas, table { max-width: 100%; }
 
 h1, h2, h3, h4, .display {
   font-family: var(--font-display);
@@ -148,6 +152,20 @@ a { color: inherit; }
   font-weight: 700;
   font-size: 0.85em;
   font-family: var(--font-display);
+}
+
+/* ---------- Nav responsive : évite tout débordement horizontal sur mobile ---------- */
+@media (max-width: 640px) {
+  .top-nav { padding: 10px 14px; gap: 6px; }
+  .top-nav .brand { font-size: 1.1em; gap: 6px; }
+  .top-nav .nav-links { gap: 2px; }
+  .top-nav .nav-links a { padding: 8px 10px; }
+  .top-nav .nav-links a .nav-label { display: none; } /* icônes seules sur mobile */
+  .player-chip { padding: 6px; gap: 0; }
+  .player-chip .chip-label { display: none; } /* avatar seul sur mobile, pseudo trop long sinon */
+}
+@media (max-width: 420px) {
+  .top-nav .brand .brand-label { display: none; } /* garde uniquement le repère "O" si l'écran est très étroit */
 }
 
 /* ---------- Boutons (Saira Condensed Bold, cf. charte CTA) ---------- */

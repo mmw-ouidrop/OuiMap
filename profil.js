@@ -65,16 +65,16 @@ function injecterNav(page) {
 
   const pseudo = getLastPseudo();
   const chip = pseudo
-    ? `<div class="player-chip"><span class="avatar">${getInitiales(pseudo)}</span> ${pseudo}</div>`
+    ? `<div class="player-chip"><span class="avatar">${getInitiales(pseudo)}</span><span class="chip-label">${pseudo}</span></div>`
     : '';
 
   slot.innerHTML = `
     <nav class="top-nav">
-      <a href="index.html" class="brand"><span class="o-mark">O</span> OuiMap Dropper</a>
+      <a href="index.html" class="brand"><span class="o-mark">O</span><span class="brand-label"> OuiMap Dropper</span></a>
       <div class="nav-links">
-        <a href="index.html" class="${page === 'accueil' ? 'active' : ''}"><i class="fa-solid fa-house"></i> Accueil</a>
-        <a href="jeu.html" class="${page === 'jeu' ? 'active' : ''}"><i class="fa-solid fa-play"></i> Jouer</a>
-        <a href="scores.html" class="${page === 'scores' ? 'active' : ''}"><i class="fa-solid fa-chart-column"></i> Stats</a>
+        <a href="index.html" class="${page === 'accueil' ? 'active' : ''}"><i class="fa-solid fa-house"></i><span class="nav-label"> Accueil</span></a>
+        <a href="jeu.html" class="${page === 'jeu' ? 'active' : ''}"><i class="fa-solid fa-play"></i><span class="nav-label"> Jouer</span></a>
+        <a href="scores.html" class="${page === 'scores' ? 'active' : ''}"><i class="fa-solid fa-chart-column"></i><span class="nav-label"> Stats</span></a>
       </div>
       ${chip}
     </nav>

@@ -126,10 +126,11 @@
   .mobile-leaderboard-toggle { display: none; }
 
   @media (max-width: 900px) {
-    .layout { flex-direction: column; padding: 12px; gap: 12px; }
+    .layout { flex-direction: column; padding: 12px; gap: 12px; align-items: stretch; }
     #leaderboard-container {
-      max-width: 100%; width: 100%; max-height: none; position: static; order: 3;
+      max-width: 100%; width: 100%; min-width: 0; max-height: none; position: static; order: 3;
     }
+    #game-container { min-width: 0; }
     #map { height: 48vh; }
     .mobile-leaderboard-toggle {
       display: flex; width: 100%; justify-content: space-between; align-items: center;
@@ -231,7 +232,7 @@
   // --- SAUVEGARDE GOOGLE SHEET (optionnelle) ---
   // Colle ici l'URL de ton Web App Google Apps Script (voir instructions fournies).
   // Laisse la chaîne vide pour désactiver l'envoi.
-  const URL_GOOGLE_SHEET = "https://script.google.com/macros/s/AKfycbzh9d3pIdO8gy-s-Zk7HsiQQAhi4KkFPQ0sOMtFt4kbOf84ve9c4c-aSM__0stbsS200g/exec";
+  const URL_GOOGLE_SHEET = "";
 
   let marqueurReel = null, marqueurJoueur = null, ligne = null;
   let clicJoueurTemp = null;
